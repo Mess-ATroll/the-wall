@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+:root {
+  --wall-bg: #141310;
+  --wall-surface: #1d1b17;
+  --wall-surface-hover: #232019;
+  --wall-border: #322e27;
+  --wall-border-soft: #24211c;
+  --wall-text: #ece6da;
+  --wall-text-muted: #93897a;
+  --wall-text-faint: #625a4e;
+  --wall-accent: #e3a93f;
+  --wall-accent-soft: rgba(227, 169, 63, 0.12);
+  --wall-accent-text: #17130a;
+  --wall-danger: #c1554a;
+  --wall-danger-soft: rgba(193, 85, 74, 0.12);
+}
+
+@theme inline {
+  --color-bg: var(--wall-bg);
+  --color-surface: var(--wall-surface);
+  --color-surface-hover: var(--wall-surface-hover);
+  --color-border: var(--wall-border);
+  --color-border-soft: var(--wall-border-soft);
+  --color-text: var(--wall-text);
+  --color-text-muted: var(--wall-text-muted);
+  --color-text-faint: var(--wall-text-faint);
+  --color-accent: var(--wall-accent);
+  --color-accent-soft: var(--wall-accent-soft);
+  --color-accent-text: var(--wall-accent-text);
+  --color-danger: var(--wall-danger);
+  --color-danger-soft: var(--wall-danger-soft);
+
+  --font-display: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-stamp: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-slide-up: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-toast-in: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wall-border) transparent;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  background: var(--wall-bg);
+  scroll-behavior: smooth;
+  /* Header (56px) + CategoryNav (~51px) are both sticky; without this,
+     anchor jumps and scrollIntoView land partially hidden underneath them. */
+  scroll-padding-top: 112px;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(227, 169, 63, 0.06), transparent),
+    var(--wall-bg);
+  color: var(--wall-text);
+  font-family: var(--font-sans);
+}
+
+/* faint mortar-grid texture behind the wall */
+.wall-texture {
+  background-image:
+    linear-gradient(var(--wall-border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--wall-border-soft) 1px, transparent 1px);
+  background-size: 100% 44px, 64px 100%;
+  background-position: 0 0, 0 0;
+  mask-image: linear-gradient(to bottom, transparent, black 120px, black calc(100% - 200px), transparent);
+}
+
+/* torn mortar edge used at the top of each brick card */
+.mortar-edge {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--wall-border) 0px,
+    var(--wall-border) 6px,
+    transparent 6px,
+    transparent 13px
+  );
+  height: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--wall-accent);
+  outline-offset: 2px;
+}
