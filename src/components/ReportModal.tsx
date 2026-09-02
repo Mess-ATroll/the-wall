@@ -6,9 +6,10 @@ import { REPORT_REASONS, type ReportReason } from "@/lib/types";
 interface ReportModalProps {
   onClose: () => void;
   onSubmit: (reason: ReportReason) => Promise<void>;
+  alreadyReported: boolean;
 }
 
-export default function ReportModal({ onClose, onSubmit }: ReportModalProps) {
+export default function ReportModal({ onClose, onSubmit, alreadyReported }: ReportModalProps) {
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -54,7 +55,21 @@ export default function ReportModal({ onClose, onSubmit }: ReportModalProps) {
         aria-labelledby="report-title"
         className="animate-slide-up w-full max-w-[420px] rounded-t-3xl border border-border bg-surface p-5 sm:rounded-3xl sm:p-6"
       >
-        {submitted ? (
+        {alreadyReported ? (
+          <div className="flex flex-col items-center gap-4 py-4 text-center">
+            <p className="text-text">You&rsquo;ve already reported this Brick.</p>
+            <p className="text-sm text-text-muted">
+              Our team will take a look — no need to report it again.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-border px-5 py-2 text-sm text-text transition-colors duration-150 hover:bg-surface-hover"
+            >
+              Close
+            </button>
+          </div>
+        ) : submitted ? (
           <div className="flex flex-col items-center gap-4 py-4 text-center">
             <p className="text-text">Thanks. We&rsquo;ll take a look.</p>
             <button

@@ -8,11 +8,18 @@ const MAX_LENGTH = 280;
 interface LeaveBrickModalProps {
   onClose: () => void;
   onSubmit: (text: string, category: Category) => Promise<void>;
+  defaultCategory: Category;
+  cooldownSeconds: number;
 }
 
-export default function LeaveBrickModal({ onClose, onSubmit }: LeaveBrickModalProps) {
+export default function LeaveBrickModal({
+  onClose,
+  onSubmit,
+  defaultCategory,
+  cooldownSeconds,
+}: LeaveBrickModalProps) {
   const [text, setText] = useState("");
-  const [category, setCategory] = useState<Category>("random");
+  const [category, setCategory] = useState<Category>(defaultCategory);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -33,6 +40,7 @@ export default function LeaveBrickModal({ onClose, onSubmit }: LeaveBrickModalPr
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (cooldownSeconds > 0) return;
     const trimmed = text.trim();
     if (!trimmed) {
       setError("Your brick can't be empty.");
@@ -62,7 +70,7 @@ export default function LeaveBrickModal({ onClose, onSubmit }: LeaveBrickModalPr
         role="dialog"
         aria-modal="true"
         aria-labelledby="leave-brick-title"
-        className="animate-slide-up flex max-h-[85vh] w-full max-w-[520px] flex-col overflow-y-auto rounded-t-3xl border border-border bg-surface p-5 sm:rounded-3xl sm:p-6"
+        className="animate-slide-up flex max-h-[85dvh] w-full max-w-[520px] flex-col overflow-y-auto rounded-t-3xl border border-border bg-surface p-5 sm:rounded-3xl sm:p-6"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 id="leave-brick-title" className="font-display text-xl font-bold text-text">
@@ -140,14 +148,20 @@ export default function LeaveBrickModal({ onClose, onSubmit }: LeaveBrickModalPr
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || cooldownSeconds > 0}
             className="mt-5 w-full rounded-full bg-accent py-3 text-sm font-bold tracking-wide text-accent-text transition-transform duration-150 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? "POSTING…" : "LEAVE IT"}
+            {submitting
+              ? "POSTING…"
+              : cooldownSeconds > 0
+                ? `WAIT ${cooldownSeconds}S`
+                : "LEAVE IT"}
           </button>
 
           <p className="mt-3 text-center text-xs text-text-faint">
-            No name. No account. Just a thought.
+            {cooldownSeconds > 0
+              ? `You can post again in ${cooldownSeconds}s.`
+              : "No name. No account. Just a thought."}
           </p>
         </form>
       </div>

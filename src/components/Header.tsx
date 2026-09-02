@@ -19,7 +19,7 @@ export default function Header({ onLeaveBrick }: HeaderProps) {
         <button
           type="button"
           onClick={onLeaveBrick}
-          className="rounded-full bg-accent px-4 py-2 text-xs font-bold tracking-wide text-accent-text transition-transform duration-150 hover:brightness-110 active:scale-95"
+          className="hidden rounded-full bg-accent px-4 py-2 text-xs font-bold tracking-wide text-accent-text transition-transform duration-150 hover:brightness-110 active:scale-95 sm:inline-flex"
         >
           Leave a Brick
         </button>

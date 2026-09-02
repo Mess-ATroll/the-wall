@@ -1,4 +1,4 @@
-import { getSupabase } from "./supabase";
+import { getSupabase, ensureAnonymousSession } from "./supabase";
 import { getStoredReaction, getStoredReactionsFor, setStoredReaction } from "./reactionStorage";
 import type { Brick, Category, CategoryFilter, ReactionKey, SortMode } from "./types";
 
@@ -59,7 +59,49 @@ export async function fetchBrickFeed({
   return rows.map((row) => ({ ...rowToBrick(row), userReaction: stored[row.id] ?? null }));
 }
 
+/**
+ * Fetches a single active brick by id, for deep-link support
+ * (/brick/:id). Deliberately a direct table SELECT rather than the
+ * feed RPC: get_brick_feed caps at 50 rows and only looks at recent
+ * activity, so it can't find an older shared brick. A direct SELECT
+ * against `bricks` is allowed by the existing bricks_select_active
+ * RLS policy (no schema/RLS change needed) and works for any brick
+ * regardless of age.
+ *
+ * Trade-off worth knowing: this can't include reaction counts, since
+ * those only exist via the aggregate RPC (raw reaction rows have no
+ * public SELECT policy, by design). A deep-linked brick's reaction
+ * bar starts at 0 rather than its true count until the same brick is
+ * also seen via the normal feed. The underlying DB counts themselves
+ * are unaffected — this is a display-only gap in the newly-added
+ * deep-link view specifically.
+ */
+export async function getBrickById(brickId: string): Promise<Brick | null> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("bricks")
+    .select("id, content, category, created_at")
+    .eq("id", brickId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    category: data.category,
+    text: data.content,
+    createdAt: data.created_at,
+    reactions: { felt: 0, funny: 0, same: 0, interesting: 0 },
+    userReaction: getStoredReaction(data.id),
+  };
+}
+
 export async function createBrick(content: string, category: Category): Promise<Brick> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
   const supabase = getSupabase();
   // Safe to .select() here: bricks_select_active permits reading rows
   // with status = 'active', and every insert is forced to that status,
@@ -99,6 +141,9 @@ export async function createBrick(content: string, category: Category): Promise<
  * storage to match. Throws on failure so the caller can roll back.
  */
 export async function setReaction(brickId: string, nextReaction: ReactionKey): Promise<void> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
   const supabase = getSupabase();
   const current = getStoredReaction(brickId);
 
@@ -130,6 +175,9 @@ export async function setReaction(brickId: string, nextReaction: ReactionKey): P
 }
 
 export async function createReport(brickId: string, reasonDbValue: string): Promise<void> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
   const supabase = getSupabase();
   // No .select() — reports has no SELECT policy at all, even for the
   // reporter themselves, so RETURNING would fail the insert. Success
