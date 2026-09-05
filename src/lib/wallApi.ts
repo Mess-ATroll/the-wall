@@ -2,6 +2,54 @@ import { getSupabase, ensureAnonymousSession } from "./supabase";
 import { getStoredReaction, getStoredReactionsFor, setStoredReaction } from "./reactionStorage";
 import type { Brick, Category, CategoryFilter, ReactionKey, SortMode } from "./types";
 
+export interface Wall {
+  id: string;
+  name: string;
+  description: string | null;
+  accessMode: "link" | "code";
+  status: "active" | "closed" | "expired";
+  expiresAt: string | null;
+  participantCount: number;
+  myDisplayMarker: string;
+}
+
+export interface CreatedWall {
+  wallId: string;
+  inviteToken: string;
+  accessCode: string | null;
+  expiresAt: string | null;
+  displayMarker: string;
+}
+
+export interface JoinedWall {
+  wallId: string;
+  name: string;
+  description: string | null;
+  displayMarker: string;
+  participantCount: number;
+}
+
+export interface PrivateBrick {
+  id: string;
+  content: string;
+  category: Category;
+  createdAt: string;
+  wallDisplayMarker: string;
+}
+
+export interface PrivateComment {
+  id: string;
+  brickId: string;
+  content: string;
+  createdAt: string;
+  wallDisplayMarker: string;
+}
+
+export interface RegenerateWallInviteResult {
+  inviteToken: string;
+  expiresAt: string | null;
+}
+
 const PAGE_SIZE = 30;
 
 interface FeedRow {
@@ -187,3 +235,235 @@ export async function createReport(brickId: string, reasonDbValue: string): Prom
     .insert({ brick_id: brickId, reason: reasonDbValue });
   if (error) throw error;
 }
+
+export async function createWall(
+  name: string,
+  description: string | null,
+  accessMode: "link" | "code",
+  expiresAt: string | null,
+): Promise<CreatedWall> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("create_wall", {
+    p_name: name,
+    p_description: description,
+    p_access_mode: accessMode,
+    p_expires_at: expiresAt,
+  });
+
+  if (error) throw error;
+
+  const row = data?.[0];
+
+if (!row) {
+  throw new Error("Wall creation returned no data");
+}
+
+return {
+  wallId: row.wall_id,
+  inviteToken: row.invite_token,
+  accessCode: row.access_code,
+  expiresAt: row.expires_at,
+  displayMarker: row.display_marker,
+};
+
+}
+
+export async function joinWall(
+  inviteToken: string,
+  accessCode: string | null = null,
+): Promise<JoinedWall> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("join_wall", {
+    p_invite_token: inviteToken,
+    p_access_code: accessCode,
+  });
+
+  if (error) throw error;
+
+  const row = data?.[0];
+
+if (!row) {
+  throw new Error("Joining Wall returned no data");
+}
+
+return {
+  wallId: row.wall_id,
+  name: row.name,
+  description: row.description,
+  displayMarker: row.display_marker,
+  participantCount: row.participant_count,
+};
+
+}
+
+export async function getWall(wallId: string): Promise<Wall> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("get_wall", {
+    p_wall_id: wallId,
+  });
+
+  if (error) throw error;
+
+  const row = data?.[0];
+
+if (!row) {
+  throw new Error("Wall not found");
+}
+
+return {
+  id: row.wall_id,
+  name: row.name,
+  description: row.description,
+  accessMode: row.access_mode,
+  status: row.status,
+  expiresAt: row.expires_at,
+  participantCount: row.participant_count,
+  myDisplayMarker: row.my_display_marker,
+};
+
+}
+
+export async function createPrivateBrick(
+  wallId: string,
+  content: string,
+  category: Category,
+): Promise<PrivateBrick> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("create_private_brick", {
+    p_wall_id: wallId,
+    p_content: content,
+    p_category: category,
+  });
+
+  if (error) throw error;
+
+  const row = data?.[0];
+
+if (!row) {
+  throw new Error("Private Brick creation returned no data");
+}
+
+return {
+  id: row.id,
+  content: row.content,
+  category: row.category,
+  createdAt: row.created_at,
+  wallDisplayMarker: row.wall_display_marker,
+};
+
+}
+
+export async function createPrivateComment(
+  brickId: string,
+  content: string,
+): Promise<unknown> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("create_private_comment", {
+    p_brick_id: brickId,
+    p_content: content,
+  });
+
+  if (error) throw error;
+
+  const row = data?.[0];
+
+if (!row) {
+  throw new Error("Private Comment creation returned no data");
+}
+
+return {
+  id: row.id,
+  brickId: row.brick_id,
+  content: row.content,
+  createdAt: row.created_at,
+  wallDisplayMarker: row.wall_display_marker,
+};
+
+}
+
+export async function updateWallSettings(
+  wallId: string,
+  name: string,
+  description: string | null,
+  accessMode: "link" | "code",
+  expiresAt: string | null,
+): Promise<boolean> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("update_wall_settings", {
+    p_wall_id: wallId,
+    p_name: name,
+    p_description: description,
+    p_access_mode: accessMode,
+    p_expires_at: expiresAt,
+  });
+
+  if (error) throw error;
+
+  return data as boolean;
+}
+
+export async function closeWall(wallId: string): Promise<boolean> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("close_wall", {
+    p_wall_id: wallId,
+  });
+
+  if (error) throw error;
+
+  return data as boolean;
+}
+
+export async function regenerateWallInvite(
+  wallId: string,
+): Promise<RegenerateWallInviteResult> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("regenerate_wall_invite", {
+    p_wall_id: wallId,
+  });
+
+  if (error) throw error;
+
+  const row = data?.[0];
+
+if (!row) {
+  throw new Error("Invite regeneration returned no data");
+}
+
+return {
+  inviteToken: row.invite_token,
+  expiresAt: row.expires_at,
+};
+}
+
