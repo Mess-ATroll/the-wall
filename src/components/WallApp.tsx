@@ -8,6 +8,7 @@ import {
   fetchBrickFeed,
   getBrickById,
   setReaction,
+  createWall,
 } from "@/lib/wallApi";
 import { getPostCooldownSecondsRemaining, recordPostSubmitted } from "@/lib/rateLimit";
 import { hasReportedBrick, markBrickReported } from "@/lib/reportStorage";
@@ -30,6 +31,7 @@ import LeaveBrickModal from "./LeaveBrickModal";
 import ReportModal from "./ReportModal";
 import Toast from "./Toast";
 import MobileLeaveBrickBar from "./MobileLeaveBrickBar";
+import CreateWallModal from "@/components/CreateWallModal";
 
 type Status = "loading" | "ready" | "error";
 
@@ -46,6 +48,8 @@ export default function WallApp() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [isCreateWallOpen, setCreateWallOpen] = useState(false);
+  const [isCreatingWall, setIsCreatingWall] = useState(false);
 
   const sessionEstablished = useRef(false);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -151,6 +155,36 @@ export default function WallApp() {
     setCooldownSeconds(getPostCooldownSecondsRemaining());
     setLeaveBrickOpen(true);
   }
+
+  async function handleCreateWall(
+  name: string,
+  description: string,
+  accessMode: "link" | "code",
+  expiresAt: string | null,
+) {
+  setIsCreatingWall(true);
+
+  try {
+    const result = await createWall(
+      name,
+      description || null,
+      accessMode,
+      expiresAt,
+    );
+
+    setCreateWallOpen(false);
+    showToast("Wall created.");
+    return result;
+  } catch (error) {
+    console.error("Create Wall failed:", error);
+    throw error instanceof Error
+      ? error
+      : new Error("Couldn't create the Wall. Try again.");
+
+  } finally {
+    setIsCreatingWall(false);
+  }
+}
 
   function findBrick(id: string): Brick | undefined {
     return bricks.find((b) => b.id === id) ?? (pinnedBrick?.id === id ? pinnedBrick : undefined);
@@ -271,7 +305,11 @@ export default function WallApp() {
       <Header onLeaveBrick={openComposer} />
       <CategoryNav active={filter} onChange={setFilter} />
 
-      <Hero onLeaveBrick={openComposer} onWalkTheWall={scrollToFeed} />
+      <Hero
+  onLeaveBrick={openComposer}
+  onWalkTheWall={scrollToFeed}
+  onCreateWall={() => setCreateWallOpen(true)}
+/>
 
       <div ref={feedRef}>
         {pinnedBrick && (
@@ -335,6 +373,14 @@ export default function WallApp() {
           cooldownSeconds={cooldownSeconds}
         />
       )}
+
+      {isCreateWallOpen && (
+  <CreateWallModal
+    onClose={() => setCreateWallOpen(false)}
+    onSubmit={handleCreateWall}
+    isCreating={isCreatingWall}
+  />
+)} 
 
       {reportingBrick && (
         <ReportModal

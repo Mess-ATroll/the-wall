@@ -3,9 +3,14 @@
 interface HeroProps {
   onLeaveBrick: () => void;
   onWalkTheWall: () => void;
+  onCreateWall: () => void;
 }
 
-export default function Hero({ onLeaveBrick, onWalkTheWall }: HeroProps) {
+export default function Hero({
+  onLeaveBrick,
+  onWalkTheWall,
+  onCreateWall,
+}: HeroProps) {
   return (
     <section
       id="top"
@@ -29,6 +34,15 @@ export default function Hero({ onLeaveBrick, onWalkTheWall }: HeroProps) {
         >
           LEAVE A BRICK
         </button>
+
+        <button
+          type="button"
+          onClick={onCreateWall}
+          className="rounded-full border border-border px-6 py-3 text-sm font-bold tracking-wide text-text transition-colors duration-150 hover:bg-surface-hover active:scale-95"
+        >
+          CREATE A WALL
+        </button>
+
         <button
           type="button"
           onClick={onWalkTheWall}
