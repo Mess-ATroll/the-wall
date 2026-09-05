@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The Wall
 
-## Getting Started
+**Borrow a wall. Say what you actually think.**
 
-First, run the development server:
+The Wall started with a pretty simple question:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+> What if you could just borrow a wall?
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Not a social network.
+Not another place where you need a profile and a carefully curated identity.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Just a space where people can leave a thought without putting their name next to it.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Maybe it's a wall for your friends.
 
-## Learn More
+Maybe your class.
 
-To learn more about Next.js, take a look at the following resources:
+Maybe a wedding, an event, a neighbourhood, a team at work, or just a bunch of people who want somewhere to say things they probably wouldn't say out loud.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+A wall can be public or private.
+It can stick around for years or disappear after an afternoon.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**You borrow it. You decide who gets in. You see what people leave behind.**
 
-## Deploy on Vercel
+That's the idea, anyway.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+I'm building the first version and figuring out what The Wall actually becomes along the way.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+##  What you can do
+
+* Leave anonymous thoughts, up to 280 characters
+* Browse the public wall
+* Sort bricks by what's fresh or what's getting attention
+* React to bricks
+* Organise thoughts by category
+* Create your own wall for a group, event, community or team
+
+More importantly, I'm experimenting with what happens when anonymous communication isn't just one giant public feed.
+
+##  Why I'm building it
+
+I've always liked the idea of the internet being a place where you can just put an idea somewhere and see what happens.
+
+The Wall is one of those ideas.
+
+It might become something useful.
+
+It might turn out to be a terrible idea.
+
+I'd rather build it and find out.
+
+##  Built with
+
+* Next.js
+* TypeScript
+* Tailwind CSS
+* Supabase
+
+##  Status
+
+The Wall is currently being built.
+
+Things will change. Some things will break. There will probably be a few questionable decisions along the way.
+
+That's part of it.
+
+##  Building in public
+
+This is one of the first things I'm building under **MessATroll**.
+
+I'm documenting the process as I go — the good ideas, the bad ones, the bugs, and hopefully the occasional thing that actually works.
+
+If you've got an idea for The Wall, found something broken, or just have an opinion about it, I'd genuinely like to hear it.
+
+
+**Built by [MessATroll](https://github.com/Mess-ATroll)**
+
+`BUILD → BREAK → LEARN → SHIP → REPEAT`
