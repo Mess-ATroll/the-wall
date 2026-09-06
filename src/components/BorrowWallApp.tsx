@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import LeaveBrickModal from "@/components/LeaveBrickModal";
+import type { Category } from "@/lib/types";
+import { getPostCooldownSecondsRemaining, recordPostSubmitted } from "@/lib/rateLimit";
 import {
+  createPrivateBrick,
   fetchPrivateBricks,
   joinWall,
   type JoinedWall,
@@ -14,6 +18,38 @@ const [wall, setWall] = useState<JoinedWall | null>(null);
 const [bricks, setBricks] = useState<PrivateBrick[]>([]);
 const [isJoining, setIsJoining] = useState(true);
 const [error, setError] = useState<string | null>(null);
+  const [isLeaveBrickOpen, setLeaveBrickOpen] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!isLeaveBrickOpen) return;
+
+    const interval = setInterval(() => {
+      setCooldownSeconds(getPostCooldownSecondsRemaining());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLeaveBrickOpen]);
+
+  async function handleSubmitPrivateBrick(text: string, category: Category) {
+    if (!wall) return;
+
+    const cooldown = getPostCooldownSecondsRemaining();
+    if (cooldown > 0) {
+      throw new Error("Slow down - you can post again in " + cooldown + "s.");
+    }
+
+    let newBrick: PrivateBrick;
+    try {
+      newBrick = await createPrivateBrick(wall.wallId, text, category);
+    } catch {
+      throw new Error("Couldn't post your Brick. Check your connection and try again.");
+    }
+
+    recordPostSubmitted();
+    setBricks((prev) => [newBrick, ...prev]);
+    setLeaveBrickOpen(false);
+  }
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -131,6 +167,17 @@ const [error, setError] = useState<string | null>(null);
           </p>
         </header>
 
+        <button
+          type="button"
+          onClick={() => {
+            setCooldownSeconds(getPostCooldownSecondsRemaining());
+            setLeaveBrickOpen(true);
+          }}
+          className="mb-6 w-full rounded-2xl border border-border bg-surface px-5 py-4 text-sm font-semibold text-text transition hover:bg-surface-muted"
+        >
+          Leave a Brick
+        </button>
+
         <section className="space-y-4">
   {bricks.length === 0 ? (
     <div className="rounded-2xl border border-border bg-surface p-6 text-center">
@@ -165,6 +212,15 @@ const [error, setError] = useState<string | null>(null);
     ))
   )}
 </section>
+      {isLeaveBrickOpen && (
+        <LeaveBrickModal
+          onClose={() => setLeaveBrickOpen(false)}
+          onSubmit={handleSubmitPrivateBrick}
+          defaultCategory="random"
+          cooldownSeconds={cooldownSeconds}
+        />
+      )}
+
       </div>
     </main>
   );
