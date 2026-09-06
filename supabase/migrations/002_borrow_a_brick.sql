@@ -1646,3 +1646,66 @@ grant execute
     integer
   )
   to authenticated;
+-- ------------------------------------------------------------
+-- Read private Bricks
+--
+-- SECURITY DEFINER means this function must explicitly enforce
+-- Wall membership and active Wall status.
+-- ------------------------------------------------------------
+
+create or replace function public.get_private_bricks(
+  p_wall_id uuid,
+  p_limit integer default 30
+)
+returns table (
+  id uuid,
+  content text,
+  category text,
+  created_at timestamptz,
+  wall_display_marker text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if p_limit is null
+     or p_limit < 1
+     or p_limit > 30 then
+    raise exception 'Limit must be between 1 and 30';
+  end if;
+
+  if not public.is_wall_member_and_active(p_wall_id) then
+    raise exception 'You are not an active member of this Wall';
+  end if;
+
+  return query
+  select
+    b.id,
+    b.content,
+    b.category,
+    b.created_at,
+    b.wall_display_marker
+  from public.bricks b
+  where b.wall_id = p_wall_id
+    and b.status = 'active'
+  order by b.created_at desc, b.id desc
+  limit p_limit;
+end;
+$$;
+
+revoke all
+  on function public.get_private_bricks(uuid, integer)
+  from public;
+
+revoke all
+  on function public.get_private_bricks(uuid, integer)
+  from anon;
+
+grant execute
+  on function public.get_private_bricks(uuid, integer)
+  to authenticated;

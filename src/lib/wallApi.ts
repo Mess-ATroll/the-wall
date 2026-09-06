@@ -467,3 +467,27 @@ return {
 };
 }
 
+export async function fetchPrivateBricks(
+  wallId: string,
+  limit = 30,
+): Promise<PrivateBrick[]> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("get_private_bricks", {
+    p_wall_id: wallId,
+    p_limit: limit,
+  });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    content: row.content,
+    category: row.category,
+    createdAt: row.created_at,
+    wallDisplayMarker: row.wall_display_marker,
+  }));
+}
