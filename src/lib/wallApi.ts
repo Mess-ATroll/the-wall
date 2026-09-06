@@ -372,7 +372,7 @@ return {
 export async function createPrivateComment(
   brickId: string,
   content: string,
-): Promise<unknown> {
+): Promise<PrivateComment> {
   const sessionOk = await ensureAnonymousSession();
   if (!sessionOk) throw new Error("No active session");
 
