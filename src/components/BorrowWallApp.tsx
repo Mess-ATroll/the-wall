@@ -42,8 +42,8 @@ const [error, setError] = useState<string | null>(null);
     let newBrick: PrivateBrick;
     try {
       newBrick = await createPrivateBrick(wall.wallId, text, category);
-    } catch {
-      throw new Error("Couldn't post your Brick. Check your connection and try again.");
+    } catch (error) {
+      throw error instanceof Error ? error : new Error(String(error));
     }
 
     recordPostSubmitted();
