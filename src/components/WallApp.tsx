@@ -9,6 +9,7 @@ import {
   getBrickById,
   setReaction,
   createWall,
+  type CreatedWall,
 } from "@/lib/wallApi";
 import { getPostCooldownSecondsRemaining, recordPostSubmitted } from "@/lib/rateLimit";
 import { hasReportedBrick, markBrickReported } from "@/lib/reportStorage";
@@ -50,6 +51,7 @@ export default function WallApp() {
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [isCreateWallOpen, setCreateWallOpen] = useState(false);
   const [isCreatingWall, setIsCreatingWall] = useState(false);
+  const [createdWall, setCreatedWall] = useState<CreatedWall | null>(null);
 
   const sessionEstablished = useRef(false);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -172,7 +174,7 @@ export default function WallApp() {
       expiresAt,
     );
 
-    setCreateWallOpen(false);
+    setCreatedWall(result);
     showToast("Wall created.");
     return result;
   } catch (error) {
@@ -375,12 +377,16 @@ export default function WallApp() {
       )}
 
       {isCreateWallOpen && (
-  <CreateWallModal
-    onClose={() => setCreateWallOpen(false)}
-    onSubmit={handleCreateWall}
-    isCreating={isCreatingWall}
-  />
-)} 
+        <CreateWallModal
+          onClose={() => {
+            setCreateWallOpen(false);
+            setCreatedWall(null);
+          }}
+          onSubmit={handleCreateWall}
+          createdWall={createdWall}
+          isCreating={isCreatingWall}
+        />
+      )}
 
       {reportingBrick && (
         <ReportModal

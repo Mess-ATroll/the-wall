@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import type { CreatedWall } from "@/lib/wallApi";
 
 interface CreateWallModalProps {
   onClose: () => void;
@@ -9,13 +10,15 @@ interface CreateWallModalProps {
     description: string,
     accessMode: "link" | "code",
     expiresAt: string | null,
-  ) => Promise<unknown>;
+  ) => Promise<CreatedWall>;
+  createdWall: CreatedWall | null;
   isCreating: boolean;
 }
 
 export default function CreateWallModal({
   onClose,
   onSubmit,
+  createdWall,
   isCreating,
 }: CreateWallModalProps) {
   const [name, setName] = useState("");
@@ -58,6 +61,18 @@ export default function CreateWallModal({
     }
   }
 
+  const inviteLink = createdWall
+    ? `${window.location.origin}/borrow/${createdWall.inviteToken}`
+    : "";
+
+  async function copyText(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      setError("Couldn't copy. Please copy it manually.");
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-xl">
@@ -82,6 +97,78 @@ export default function CreateWallModal({
           </button>
         </div>
 
+        {createdWall ? (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-border bg-background p-4">
+              <p className="font-stamp text-xs tracking-wider text-text-muted">
+                WALL CREATED
+              </p>
+              <p className="mt-2 text-sm text-text">
+                Share this invite with the people you want in the Wall.
+              </p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="wall-invite-link"
+                className="mb-1.5 block text-sm font-medium text-text"
+              >
+                Invite link
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="wall-invite-link"
+                  type="text"
+                  value={inviteLink}
+                  readOnly
+                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-base text-text outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => copyText(inviteLink)}
+                  className="rounded-xl border border-border px-3 py-2.5 text-sm font-medium text-text transition-colors hover:bg-surface-hover"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            {createdWall.accessCode && (
+              <div>
+                <label
+                  htmlFor="wall-access-code"
+                  className="mb-1.5 block text-sm font-medium text-text"
+                >
+                  Access code
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="wall-access-code"
+                    type="text"
+                    value={createdWall.accessCode}
+                    readOnly
+                    className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-base font-mono tracking-wider text-text outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => copyText(createdWall.accessCode!)}
+                    className="rounded-xl border border-border px-3 py-2.5 text-sm font-medium text-text transition-colors hover:bg-surface-hover"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-full bg-text px-5 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -193,6 +280,7 @@ export default function CreateWallModal({
             {isCreating ? "Creating…" : "Create Wall"}
           </button>
         </form>
+        )}
       </div>
     </div>
   );
