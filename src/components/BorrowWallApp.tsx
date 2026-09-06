@@ -43,7 +43,7 @@ const [error, setError] = useState<string | null>(null);
     try {
       newBrick = await createPrivateBrick(wall.wallId, text, category);
     } catch (error) {
-      throw error instanceof Error ? error : new Error(String(error));
+      throw new Error(JSON.stringify(error));
     }
 
     recordPostSubmitted();
