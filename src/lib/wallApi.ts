@@ -401,6 +401,29 @@ return {
 
 }
 
+export async function fetchPrivateComments(
+  brickId: string,
+): Promise<PrivateComment[]> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase.rpc("get_private_comments", {
+    p_brick_id: brickId,
+  });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    brickId: row.brick_id,
+    content: row.content,
+    createdAt: row.created_at,
+    wallDisplayMarker: row.wall_display_marker,
+  }));
+}
+
 export async function updateWallSettings(
   wallId: string,
   name: string,

@@ -6,16 +6,24 @@ import type { Category } from "@/lib/types";
 import { getPostCooldownSecondsRemaining, recordPostSubmitted } from "@/lib/rateLimit";
 import {
   createPrivateBrick,
+  createPrivateComment,
+  fetchPrivateComments,
   fetchPrivateBricks,
   joinWall,
   type JoinedWall,
   type PrivateBrick,
+  type PrivateComment,
 } from "@/lib/wallApi";
 
 export default function BorrowWallApp() {
 const [inviteToken, setInviteToken] = useState<string | null>(null);
 const [wall, setWall] = useState<JoinedWall | null>(null);
 const [bricks, setBricks] = useState<PrivateBrick[]>([]);
+const [comments, setComments] = useState<Record<string, PrivateComment[]>>({});
+const [activeCommentBrickId, setActiveCommentBrickId] = useState<string | null>(null);
+const [commentText, setCommentText] = useState("");
+const [commentCooldownSeconds, setCommentCooldownSeconds] = useState(0);
+const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 const [isJoining, setIsJoining] = useState(true);
 const [error, setError] = useState<string | null>(null);
   const [isLeaveBrickOpen, setLeaveBrickOpen] = useState(false);
@@ -31,6 +39,66 @@ const [error, setError] = useState<string | null>(null);
     return () => clearInterval(interval);
   }, [isLeaveBrickOpen]);
 
+  useEffect(() => {
+  if (!activeCommentBrickId) return;
+
+  const interval = setInterval(() => {
+    setCommentCooldownSeconds(getCommentCooldownSecondsRemaining());
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [activeCommentBrickId]);
+
+  function getCommentCooldownSecondsRemaining(): number {
+  if (typeof window === "undefined") return 0;
+
+  const raw = window.localStorage.getItem("wall_last_comment_at");
+  if (!raw) return 0;
+
+  const lastCommentAt = Number(raw);
+  if (Number.isNaN(lastCommentAt)) return 0;
+
+  const elapsed = Date.now() - lastCommentAt;
+  const remaining = 10_000 - elapsed;
+
+  return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
+}
+async function handleSubmitPrivateComment(brickId: string) {
+  const text = commentText.trim();
+
+  if (!text) return;
+
+  const cooldown = getCommentCooldownSecondsRemaining();
+
+  if (cooldown > 0) {
+    setCommentCooldownSeconds(cooldown);
+    return;
+  }
+
+  setIsSubmittingComment(true);
+
+  try {
+    const newComment = await createPrivateComment(brickId, text);
+
+    setComments((prev) => ({
+      ...prev,
+      [brickId]: [...(prev[brickId] ?? []), newComment],
+    }));
+
+    window.localStorage.setItem(
+      "wall_last_comment_at",
+      String(Date.now()),
+    );
+
+    setCommentText("");
+    setActiveCommentBrickId(null);
+    setCommentCooldownSeconds(0);
+  } catch (error) {
+    console.error("Failed to create private comment:", error);
+  } finally {
+    setIsSubmittingComment(false);
+  }
+}
   async function handleSubmitPrivateBrick(text: string, category: Category) {
     if (!wall) return;
 
@@ -80,6 +148,25 @@ const [error, setError] = useState<string | null>(null);
 
   const privateBricks = await fetchPrivateBricks(result.wallId);
   setBricks(privateBricks);
+
+  const commentEntries = await Promise.all(
+  privateBricks.map(async (brick) => {
+    try {
+      const privateComments = await fetchPrivateComments(brick.id);
+      return [brick.id, privateComments] as const;
+    } catch (error) {
+      console.error(
+        `Failed to load comments for Brick ${brick.id}:`,
+        error,
+      );
+      return [brick.id, []] as const;
+    }
+  }),
+);
+
+  if (!cancelled) {
+    setComments(Object.fromEntries(commentEntries));
+  }
 }
       } catch (err) {
         if (!cancelled) {
@@ -208,6 +295,101 @@ const [error, setError] = useState<string | null>(null);
         <p className="mt-4 text-xs text-text-faint">
           {new Date(brick.createdAt).toLocaleString()}
         </p>
+
+        <button
+  type="button"
+  onClick={() => {
+    setActiveCommentBrickId(brick.id);
+    setCommentText("");
+    setCommentCooldownSeconds(getCommentCooldownSecondsRemaining());
+  }}
+  className="mt-4 text-sm font-semibold text-text-muted transition hover:text-text"
+>
+  Add a comment
+</button>
+
+{activeCommentBrickId === brick.id && (
+  <div className="mt-4 rounded-xl border border-border bg-surface-muted p-4">
+    <textarea
+      value={commentText}
+      onChange={(event) => setCommentText(event.target.value.slice(0, 280))}
+      placeholder="Write a comment..."
+      maxLength={280}
+      rows={3}
+      className="w-full resize-none rounded-xl border border-border bg-surface p-3 text-base text-text outline-none placeholder:text-text-faint focus:border-text-muted"
+      disabled={isSubmittingComment}
+    />
+
+    <div className="mt-3 flex items-center justify-between gap-3">
+      <span className="text-xs text-text-faint">
+        {commentText.length}/280
+      </span>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveCommentBrickId(null);
+            setCommentText("");
+            setCommentCooldownSeconds(0);
+          }}
+          className="rounded-lg px-3 py-2 text-sm text-text-muted transition hover:bg-surface"
+          disabled={isSubmittingComment}
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSubmitPrivateComment(brick.id)}
+          disabled={
+            !commentText.trim() ||
+            isSubmittingComment ||
+            commentCooldownSeconds > 0
+          }
+          className="rounded-lg bg-text px-3 py-2 text-sm font-semibold text-surface transition disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {isSubmittingComment
+            ? "Posting..."
+            : commentCooldownSeconds > 0
+              ? `Wait ${commentCooldownSeconds}s`
+              : "Comment"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+        {comments[brick.id]?.length > 0 && (
+          <div className="mt-6 border-t border-border pt-5">
+            <p className="mb-3 font-stamp text-xs tracking-wider text-text-muted">
+              COMMENTS
+            </p>
+
+            <div className="space-y-3">
+              {comments[brick.id].map((comment) => (
+                <div
+                  key={comment.id}
+                  className="rounded-xl bg-surface-muted p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-stamp text-xs tracking-wider text-text-muted">
+                      {comment.wallDisplayMarker}
+                    </span>
+
+                    <span className="text-xs text-text-faint">
+                      {new Date(comment.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text">
+                    {comment.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </article>
     ))
   )}
