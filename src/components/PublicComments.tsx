@@ -122,7 +122,7 @@ export default function PublicComments({
         </>
       )}
 
-      {!expanded && commentCount === 0 && (
+      {!expanded && commentCount <= 3 && (
         <button
           type="button"
           onClick={() => setExpanded(true)}
