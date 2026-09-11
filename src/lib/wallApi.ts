@@ -1,6 +1,6 @@
 import { getSupabase, ensureAnonymousSession } from "./supabase";
 import { getStoredReaction, getStoredReactionsFor, setStoredReaction } from "./reactionStorage";
-import type { Brick, Category, CategoryFilter, ReactionKey, SortMode } from "./types";
+import type { Brick, PublicCommentPreview, Category, CategoryFilter, ReactionKey, SortMode } from "./types";
 
 export interface Wall {
   id: string;
@@ -61,6 +61,8 @@ interface FeedRow {
   funny_count: number;
   same_count: number;
   interesting_count: number;
+  comment_count: number;
+  comment_preview: Array<{ id: string; content: string; created_at: string }>;
 }
 
 function rowToBrick(row: FeedRow): Brick {
@@ -76,6 +78,8 @@ function rowToBrick(row: FeedRow): Brick {
       interesting: row.interesting_count,
     },
     userReaction: getStoredReaction(row.id),
+    commentCount: row.comment_count,
+    commentPreview: row.comment_preview.map((comment) => ({ id: comment.id, content: comment.content, createdAt: comment.created_at })),
   };
 }
 
@@ -142,7 +146,9 @@ export async function getBrickById(brickId: string): Promise<Brick | null> {
     text: data.content,
     createdAt: data.created_at,
     reactions: { felt: 0, funny: 0, same: 0, interesting: 0 },
-    userReaction: getStoredReaction(data.id),
+    userReaction: null,
+    commentCount: 0,
+    commentPreview: [],
   };
 }
 
@@ -170,6 +176,8 @@ export async function createBrick(content: string, category: Category): Promise<
     createdAt: data.created_at,
     reactions: { felt: 0, funny: 0, same: 0, interesting: 0 },
     userReaction: null,
+    commentCount: 0,
+    commentPreview: [],
   };
 }
 
@@ -222,7 +230,7 @@ export async function setReaction(brickId: string, nextReaction: ReactionKey): P
   setStoredReaction(brickId, nextReaction);
 }
 
-export async function createReport(brickId: string, reasonDbValue: string): Promise<void> {
+export async function createReport(targetId: string, reasonDbValue: string, targetType: "brick" | "comment" = "brick"): Promise<void> {
   const sessionOk = await ensureAnonymousSession();
   if (!sessionOk) throw new Error("No active session");
 
@@ -232,7 +240,7 @@ export async function createReport(brickId: string, reasonDbValue: string): Prom
   // is judged purely by the absence of an error.
   const { error } = await supabase
     .from("reports")
-    .insert({ brick_id: brickId, reason: reasonDbValue });
+    .insert(targetType === "comment" ? { comment_id: targetId, reason: reasonDbValue } : { brick_id: targetId, reason: reasonDbValue });
   if (error) throw error;
 }
 
@@ -513,4 +521,56 @@ export async function fetchPrivateBricks(
     createdAt: row.created_at,
     wallDisplayMarker: row.wall_display_marker,
   }));
+}
+export async function fetchPublicComments(
+  brickId: string,
+): Promise<PublicCommentPreview[]> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("comments")
+    .select("id, content, created_at")
+    .eq("brick_id", brickId)
+    .is("wall_display_marker", null)
+    .eq("status", "active")
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    content: row.content,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function createPublicComment(
+  brickId: string,
+  content: string,
+): Promise<PublicCommentPreview> {
+  const sessionOk = await ensureAnonymousSession();
+  if (!sessionOk) throw new Error("No active session");
+
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("comments")
+    .insert({
+      brick_id: brickId,
+      content: content.trim(),
+      wall_display_marker: null,
+    })
+    .select("id, content, created_at")
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    content: data.content,
+    createdAt: data.created_at,
+  };
 }

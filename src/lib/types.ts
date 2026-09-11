@@ -21,6 +21,12 @@ export type ReactionKey = (typeof REACTIONS)[number]["key"];
 
 export type ReactionCounts = Record<ReactionKey, number>;
 
+export interface PublicCommentPreview {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface Brick {
   id: string;
   category: Category;
@@ -30,6 +36,8 @@ export interface Brick {
   reactions: ReactionCounts;
   /** The reaction this browser gave, read from local storage — not from the DB (reactions has no public SELECT policy). */
   userReaction: ReactionKey | null;
+  commentCount: number;
+  commentPreview: PublicCommentPreview[];
 }
 
 export const REPORT_REASONS = [
