@@ -140,6 +140,17 @@ export async function getBrickById(brickId: string): Promise<Brick | null> {
   if (error) throw error;
   if (!data) return null;
 
+  const { data: comments, count: commentCount, error: commentsError } = await supabase
+    .from("comments")
+    .select("id, content, created_at", { count: "exact" })
+    .eq("brick_id", brickId)
+    .is("wall_display_marker", null)
+    .eq("status", "active")
+    .order("created_at", { ascending: true })
+    .limit(3);
+
+  if (commentsError) throw commentsError;
+
   return {
     id: data.id,
     category: data.category,
@@ -147,8 +158,12 @@ export async function getBrickById(brickId: string): Promise<Brick | null> {
     createdAt: data.created_at,
     reactions: { felt: 0, funny: 0, same: 0, interesting: 0 },
     userReaction: null,
-    commentCount: 0,
-    commentPreview: [],
+    commentCount: commentCount ?? 0,
+    commentPreview: (comments ?? []).map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      createdAt: comment.created_at,
+    })),
   };
 }
 
