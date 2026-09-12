@@ -4,6 +4,7 @@ import { formatTimeAgo } from "@/lib/formatTime";
 import type { Brick, ReactionKey } from "@/lib/types";
 import ReactionBar from "./ReactionBar";
 import BrickMenu from "./BrickMenu";
+import PublicComments from "./PublicComments";
 
 interface BrickCardProps {
   brick: Brick;
@@ -41,6 +42,7 @@ export default function BrickCard({ brick, onReact, onShare, onCopyLink, onRepor
           onReport={() => onReport(brick)}
         />
       </div>
+      <PublicComments brickId={brick.id} commentCount={brick.commentCount} commentPreview={brick.commentPreview} />
     </article>
   );
 }
