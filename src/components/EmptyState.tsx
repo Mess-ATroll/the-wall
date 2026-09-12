@@ -14,7 +14,7 @@ export default function EmptyState({ onLeaveBrick }: EmptyStateProps) {
         onClick={onLeaveBrick}
         className="mt-1 rounded-full bg-accent px-5 py-2.5 text-xs font-bold tracking-wide text-accent-text transition-transform duration-150 hover:brightness-110 active:scale-95"
       >
-        LEAVE A BRICK
+        Leave a Brick
       </button>
     </div>
   );

@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { themeInitScript } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "The Wall",
-  description: "Say something. Leave no name.",
+  description: "Anonymous thoughts, opinions, jokes and everything in between.",
 };
 
 export const viewport: Viewport = {
@@ -15,6 +16,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );

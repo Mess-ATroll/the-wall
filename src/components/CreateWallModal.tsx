@@ -79,10 +79,10 @@ export default function CreateWallModal({
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-stamp text-lg uppercase tracking-wide text-text">
-              Create a Wall
+              Borrow a Wall
             </h2>
             <p className="mt-1 text-sm text-text-muted">
-              Make a private space for anonymous thoughts.
+              A private Wall for your group&rsquo;s anonymous thoughts.
             </p>
           </div>
 
@@ -99,9 +99,9 @@ export default function CreateWallModal({
 
         {createdWall ? (
           <div className="space-y-5">
-            <div className="rounded-xl border border-border bg-background p-4">
+            <div className="rounded-xl border border-border bg-bg p-4">
               <p className="font-stamp text-xs tracking-wider text-text-muted">
-                WALL CREATED
+                WALL BORROWED
               </p>
               <p className="mt-2 text-sm text-text">
                 Share this invite with the people you want in the Wall.
@@ -121,7 +121,7 @@ export default function CreateWallModal({
                   type="text"
                   value={inviteLink}
                   readOnly
-                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-base text-text outline-none"
+                  className="min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 py-2.5 text-base text-text outline-none"
                 />
                 <button
                   type="button"
@@ -147,7 +147,7 @@ export default function CreateWallModal({
                     type="text"
                     value={createdWall.accessCode}
                     readOnly
-                    className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-base font-mono tracking-wider text-text outline-none"
+                    className="min-w-0 flex-1 rounded-xl border border-border bg-bg px-3 py-2.5 text-base font-mono tracking-wider text-text outline-none"
                   />
                   <button
                     type="button"
@@ -163,7 +163,7 @@ export default function CreateWallModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-full bg-text px-5 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+              className="w-full rounded-full bg-text px-5 py-3 text-sm font-medium text-bg transition-opacity hover:opacity-90"
             >
               Done
             </button>
@@ -185,7 +185,7 @@ export default function CreateWallModal({
               maxLength={80}
               placeholder="e.g. Class of 2026"
               disabled={isCreating}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base text-text outline-none focus:border-text-muted"
+              className="w-full rounded-xl border border-border bg-bg px-3 py-2.5 text-base text-text outline-none focus:border-text-muted"
               autoFocus
             />
           </div>
@@ -205,7 +205,7 @@ export default function CreateWallModal({
               rows={3}
               placeholder="What is this Wall for?"
               disabled={isCreating}
-              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-base text-text outline-none focus:border-text-muted"
+              className="w-full resize-none rounded-xl border border-border bg-bg px-3 py-2.5 text-base text-text outline-none focus:border-text-muted"
             />
           </div>
 
@@ -221,7 +221,7 @@ export default function CreateWallModal({
                 disabled={isCreating}
                 className={`rounded-xl border px-3 py-2.5 text-sm transition-colors ${
                   accessMode === "link"
-                    ? "border-text bg-text text-background"
+                    ? "border-text bg-text text-bg"
                     : "border-border text-text hover:bg-surface-hover"
                 }`}
               >
@@ -234,7 +234,7 @@ export default function CreateWallModal({
                 disabled={isCreating}
                 className={`rounded-xl border px-3 py-2.5 text-sm transition-colors ${
                   accessMode === "code"
-                    ? "border-text bg-text text-background"
+                    ? "border-text bg-text text-bg"
                     : "border-border text-text hover:bg-surface-hover"
                 }`}
               >
@@ -262,7 +262,7 @@ export default function CreateWallModal({
               value={expiresAt}
               onChange={(event) => setExpiresAt(event.target.value)}
               disabled={isCreating}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base text-text outline-none focus:border-text-muted"
+              className="w-full rounded-xl border border-border bg-bg px-3 py-2.5 text-base text-text outline-none focus:border-text-muted"
             />
           </div>
 
@@ -275,9 +275,9 @@ export default function CreateWallModal({
           <button
             type="submit"
             disabled={isCreating}
-            className="w-full rounded-full bg-text px-5 py-3 text-sm font-medium text-background transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-full bg-text px-5 py-3 text-sm font-medium text-bg transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isCreating ? "Creating…" : "Create Wall"}
+            {isCreating ? "Borrowing…" : "Borrow the Wall"}
           </button>
         </form>
         )}

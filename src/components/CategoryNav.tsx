@@ -13,7 +13,7 @@ export default function CategoryNav({ active, onChange }: CategoryNavProps) {
   return (
     <nav
       aria-label="Filter bricks by category"
-      className="sticky top-14 z-20 border-b border-border bg-bg/85 backdrop-blur-md"
+      className="sticky top-14 z-20 border-b border-border bg-bg/85 backdrop-blur-md transition-colors duration-200"
     >
       <div className="mx-auto flex max-w-[760px] gap-2 overflow-x-auto px-4 py-2.5 no-scrollbar">
         {FILTERS.map((category) => {

@@ -4,7 +4,6 @@ import { formatTimeAgo } from "@/lib/formatTime";
 import type { Brick, ReactionKey } from "@/lib/types";
 import ReactionBar from "./ReactionBar";
 import BrickMenu from "./BrickMenu";
-import PublicComments from "./PublicComments";
 
 interface BrickCardProps {
   brick: Brick;
@@ -17,8 +16,6 @@ interface BrickCardProps {
 export default function BrickCard({ brick, onReact, onShare, onCopyLink, onReport }: BrickCardProps) {
   return (
     <article className="animate-fade-in rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <div className="mortar-edge -mx-4 -mt-4 mb-4 sm:-mx-5 sm:-mt-5" aria-hidden="true" />
-
       <div className="mb-3 flex items-center justify-between">
         <span className="font-stamp text-[11px] uppercase tracking-wider text-accent">
           {brick.category}
@@ -44,7 +41,6 @@ export default function BrickCard({ brick, onReact, onShare, onCopyLink, onRepor
           onReport={() => onReport(brick)}
         />
       </div>
-      <PublicComments brickId={brick.id} commentCount={brick.commentCount} commentPreview={brick.commentPreview} />
     </article>
   );
 }

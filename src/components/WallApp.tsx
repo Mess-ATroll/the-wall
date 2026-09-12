@@ -24,6 +24,7 @@ import type {
 } from "@/lib/types";
 import { REPORT_REASON_DB_VALUES } from "@/lib/types";
 import Header from "./Header";
+import SkipLink from "./SkipLink";
 import CategoryNav from "./CategoryNav";
 import Hero from "./Hero";
 import WallFeed from "./WallFeed";
@@ -36,10 +37,21 @@ import CreateWallModal from "@/components/CreateWallModal";
 
 type Status = "loading" | "ready" | "error";
 
+const BRICK_DEEP_LINK_PATTERN = /^\/brick\/([^/]+)\/?$/;
+
 export default function WallApp() {
   const [bricks, setBricks] = useState<Brick[]>([]);
   const [pinnedBrick, setPinnedBrick] = useState<Brick | null>(null);
   const [pinnedNotFound, setPinnedNotFound] = useState(false);
+  // Whether this page was opened as a shared /brick/:id link. Starts
+  // false to match what the static export actually prerendered (built
+  // with no knowledge of this path — the host serves the homepage's
+  // prerendered HTML for any path via the wildcard redirect), then is
+  // set from the URL in the effect below, right after mount. Reading
+  // window.location during the lazy-initializer render pass instead
+  // would disagree with that prerendered markup and cause a hydration
+  // mismatch on real /brick/:id visits.
+  const [isBrickDeepLink, setIsBrickDeepLink] = useState(false);
   const [filter, setFilter] = useState<CategoryFilter>("All");
   const [sortMode, setSortMode] = useState<SortMode>("fresh");
   const [status, setStatus] = useState<Status>("loading");
@@ -106,8 +118,17 @@ export default function WallApp() {
   // normal feed, regardless of the feed's own filter/sort state.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const match = window.location.pathname.match(/^\/brick\/([^/]+)\/?$/);
+    const match = window.location.pathname.match(BRICK_DEEP_LINK_PATTERN);
     if (!match) return;
+
+    // Reading location.pathname here (not during render) is syncing from
+    // an external system the static export can't know about at build
+    // time — the same justified exception as the theme-read effect in
+    // ThemeToggle. Setting it as early as possible (before the await
+    // below) keeps the Hero-suppression swap effectively instant, well
+    // ahead of the network round-trip to actually fetch the brick.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsBrickDeepLink(true);
     const id = match[1];
 
     (async () => {
@@ -302,68 +323,90 @@ export default function WallApp() {
   const showFullPageError = status === "error" && bricks.length === 0;
   const composerDefaultCategory: Category = filter === "All" ? "random" : filter;
 
+  const feedContent = showFullPageError ? (
+    <div className="mx-auto flex max-w-[760px] flex-col items-center gap-4 px-4 py-16 text-center">
+      <p className="text-text">{statusError}</p>
+      <button
+        type="button"
+        onClick={() => setRetryCount((c) => c + 1)}
+        className="rounded-full border border-border px-5 py-2.5 text-sm text-text transition-colors duration-150 hover:bg-surface-hover"
+      >
+        Try again
+      </button>
+    </div>
+  ) : showFullPageLoading ? (
+    <div className="mx-auto max-w-[760px] px-4 py-16 text-center text-text-muted">
+      Loading the wall…
+    </div>
+  ) : (
+    <WallFeed
+      bricks={bricks}
+      sortMode={sortMode}
+      onSortChange={setSortMode}
+      onReact={handleReact}
+      onShare={handleShare}
+      onCopyLink={handleCopyLink}
+      onReport={handleOpenReport}
+      onLeaveBrick={openComposer}
+    />
+  );
+
   return (
     <>
-      <Header onLeaveBrick={openComposer} />
-      <CategoryNav active={filter} onChange={setFilter} />
+      <SkipLink />
+      <Header onLeaveBrick={openComposer} onBorrowWall={() => setCreateWallOpen(true)} />
 
-      <Hero
-  onLeaveBrick={openComposer}
-  onWalkTheWall={scrollToFeed}
-  onCreateWall={() => setCreateWallOpen(true)}
-/>
+      {isBrickDeepLink ? (
+        <div ref={feedRef}>
+          {pinnedBrick && (
+            <section className="mx-auto max-w-[760px] px-4 pb-2 pt-6 sm:pt-8">
+              <p className="mb-3 text-sm text-text-muted">Someone left this on The Wall.</p>
+              <BrickCard
+                brick={pinnedBrick}
+                onReact={handleReact}
+                onShare={handleShare}
+                onCopyLink={handleCopyLink}
+                onReport={handleOpenReport}
+              />
+            </section>
+          )}
+          {pinnedNotFound && (
+            <section className="mx-auto max-w-[760px] px-4 pb-2 pt-6 sm:pt-8">
+              <p className="text-sm text-text-muted">
+                That Brick isn&rsquo;t here anymore — maybe it was removed.
+              </p>
+            </section>
+          )}
 
-      <div ref={feedRef}>
-        {pinnedBrick && (
-          <section className="mx-auto max-w-[760px] px-4 pt-1">
-            <p className="mb-2 font-stamp text-[11px] uppercase tracking-wider text-text-faint">
-              Shared Brick
-            </p>
-            <BrickCard
-              brick={pinnedBrick}
-              onReact={handleReact}
-              onShare={handleShare}
-              onCopyLink={handleCopyLink}
-              onReport={handleOpenReport}
-            />
-          </section>
-        )}
-        {pinnedNotFound && (
-          <div className="mx-auto max-w-[760px] px-4 pt-1">
-            <p className="text-sm text-text-muted">
-              That Brick isn&rsquo;t here anymore — maybe it was removed.
-            </p>
-          </div>
-        )}
+          {(pinnedBrick || pinnedNotFound) && (
+            <div className="mx-auto max-w-[760px] px-4 py-6 text-center">
+              <a
+                href="#rest-of-wall"
+                className="text-xs text-text-faint transition-colors duration-150 hover:text-text-muted"
+              >
+                See more of The Wall ↓
+              </a>
+            </div>
+          )}
 
-        {showFullPageError ? (
-          <div className="mx-auto flex max-w-[760px] flex-col items-center gap-4 px-4 py-16 text-center">
-            <p className="text-text">{statusError}</p>
-            <button
-              type="button"
-              onClick={() => setRetryCount((c) => c + 1)}
-              className="rounded-full border border-border px-5 py-2.5 text-sm text-text transition-colors duration-150 hover:bg-surface-hover"
-            >
-              Try again
-            </button>
+          <div id="rest-of-wall">
+            <CategoryNav active={filter} onChange={setFilter} />
+            {feedContent}
           </div>
-        ) : showFullPageLoading ? (
-          <div className="mx-auto max-w-[760px] px-4 py-16 text-center text-text-muted">
-            Loading the wall…
-          </div>
-        ) : (
-          <WallFeed
-            bricks={bricks}
-            sortMode={sortMode}
-            onSortChange={setSortMode}
-            onReact={handleReact}
-            onShare={handleShare}
-            onCopyLink={handleCopyLink}
-            onReport={handleOpenReport}
+        </div>
+      ) : (
+        <>
+          <CategoryNav active={filter} onChange={setFilter} />
+
+          <Hero
             onLeaveBrick={openComposer}
+            onWalkTheWall={scrollToFeed}
+            onCreateWall={() => setCreateWallOpen(true)}
           />
-        )}
-      </div>
+
+          <div ref={feedRef}>{feedContent}</div>
+        </>
+      )}
 
       <MobileLeaveBrickBar onLeaveBrick={openComposer} />
 

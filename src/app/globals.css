@@ -1,37 +1,79 @@
 @import "tailwindcss";
 
+/*
+ * Theme tokens.
+ * Light is the signature/default experience; dark is a fully separate
+ * palette selected via [data-theme="dark"] on <html> — not an inversion
+ * of light. See lib/theme.ts for how the attribute gets set.
+ */
 :root {
-  --wall-bg: #141310;
-  --wall-surface: #1d1b17;
-  --wall-surface-hover: #232019;
-  --wall-border: #322e27;
-  --wall-border-soft: #24211c;
-  --wall-text: #ece6da;
-  --wall-text-muted: #93897a;
-  --wall-text-faint: #625a4e;
-  --wall-accent: #e3a93f;
-  --wall-accent-soft: rgba(227, 169, 63, 0.12);
-  --wall-accent-text: #17130a;
-  --wall-danger: #c1554a;
-  --wall-danger-soft: rgba(193, 85, 74, 0.12);
+  --background: #F5F3EE;
+  --surface: #FFFFFF;
+  --surface-hover: #EDEAE2;
+  --surface-elevated: #FFFFFF;
+  --surface-muted: #F0EDE6;
+  --border: #D9D7D0;
+  --border-soft: #E6E4DD;
+
+  --foreground: #111111;
+  --foreground-muted: #686861;
+  --foreground-faint: #9A968A;
+
+  --accent: #B8862E;
+  --accent-soft: rgba(184, 134, 46, 0.12);
+  --accent-foreground: #17130A;
+
+  --danger: #B33B30;
+  --danger-soft: rgba(179, 59, 48, 0.10);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+}
+
+[data-theme="dark"] {
+  --background: #101011;
+  --surface: #171719;
+  --surface-hover: #1E1E21;
+  --surface-elevated: #1E1E21;
+  --surface-muted: #1A1A1C;
+  --border: #2A2A2C;
+  --border-soft: #201F21;
+
+  --foreground: #F2F1EC;
+  --foreground-muted: #9A9992;
+  --foreground-faint: #625F58;
+
+  --accent: #E3A93F;
+  --accent-soft: rgba(227, 169, 63, 0.14);
+  --accent-foreground: #17130A;
+
+  --danger: #C1554A;
+  --danger-soft: rgba(193, 85, 74, 0.12);
 }
 
 @theme inline {
-  --color-bg: var(--wall-bg);
-  --color-surface: var(--wall-surface);
-  --color-surface-hover: var(--wall-surface-hover);
-  --color-border: var(--wall-border);
-  --color-border-soft: var(--wall-border-soft);
-  --color-text: var(--wall-text);
-  --color-text-muted: var(--wall-text-muted);
-  --color-text-faint: var(--wall-text-faint);
-  --color-accent: var(--wall-accent);
-  --color-accent-soft: var(--wall-accent-soft);
-  --color-accent-text: var(--wall-accent-text);
-  --color-danger: var(--wall-danger);
-  --color-danger-soft: var(--wall-danger-soft);
+  --color-bg: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-text: var(--foreground);
+  --color-text-muted: var(--foreground-muted);
+  --color-text-faint: var(--foreground-faint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
 
-  --font-display: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+
+  --font-display: "Source Serif 4", Georgia, "Iowan Old Style", "Times New Roman", serif;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-stamp: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
@@ -75,7 +117,7 @@
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--wall-border) transparent;
+  scrollbar-color: var(--border) transparent;
 }
 
 .no-scrollbar {
@@ -87,7 +129,7 @@
 }
 
 html {
-  background: var(--wall-bg);
+  background: var(--background);
   scroll-behavior: smooth;
   /* Header (56px) + CategoryNav (~51px) are both sticky; without this,
      anchor jumps and scrollIntoView land partially hidden underneath them. */
@@ -95,36 +137,24 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(227, 169, 63, 0.06), transparent),
-    var(--wall-bg);
-  color: var(--wall-text);
+  background: var(--background);
+  color: var(--foreground);
   font-family: var(--font-sans);
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
-/* faint mortar-grid texture behind the wall */
-.wall-texture {
-  background-image:
-    linear-gradient(var(--wall-border-soft) 1px, transparent 1px),
-    linear-gradient(90deg, var(--wall-border-soft) 1px, transparent 1px);
-  background-size: 100% 44px, 64px 100%;
-  background-position: 0 0, 0 0;
-  mask-image: linear-gradient(to bottom, transparent, black 120px, black calc(100% - 200px), transparent);
-}
-
-/* torn mortar edge used at the top of each brick card */
-.mortar-edge {
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--wall-border) 0px,
-    var(--wall-border) 6px,
-    transparent 6px,
-    transparent 13px
-  );
-  height: 2px;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 :focus-visible {
-  outline: 2px solid var(--wall-accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import Header from "@/components/Header";
+import SkipLink from "@/components/SkipLink";
 import LeaveBrickModal from "@/components/LeaveBrickModal";
 import type { Category } from "@/lib/types";
 import { getPostCooldownSecondsRemaining, recordPostSubmitted } from "@/lib/rateLimit";
@@ -192,37 +195,54 @@ async function handleSubmitPrivateComment(brickId: string) {
 
   if (!inviteToken) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-md text-center">
-          <h1 className="font-display text-3xl font-bold text-text">
-            WALL INVITE REQUIRED
-          </h1>
-          <p className="mt-3 text-sm text-text-muted">
-            Use a private Wall invite link to enter.
-          </p>
-        </div>
-      </main>
+      <>
+        <SkipLink />
+        <Header homeHref="/" />
+        <main id="top" tabIndex={-1} className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 outline-none">
+          <div className="w-full max-w-md text-center">
+            <h1 className="font-display text-3xl font-bold text-text">
+              WALL INVITE REQUIRED
+            </h1>
+            <p className="mt-3 text-sm text-text-muted">
+              Use a private Wall invite link to enter.
+            </p>
+          </div>
+        </main>
+      </>
     );
   }
 
   if (isJoining) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4">
-        <p className="text-sm text-text-muted">Joining Wall…</p>
-      </main>
+      <>
+        <SkipLink />
+        <Header homeHref="/" />
+        <main id="top" tabIndex={-1} className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 outline-none">
+          <p className="text-sm text-text-muted">Joining Wall…</p>
+        </main>
+      </>
     );
-
   }
  if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-md text-center">
-          <h1 className="font-display text-3xl font-bold text-text">
-            CAN&apos;T JOIN THIS WALL
-          </h1>
-          <p className="mt-3 text-sm text-text-muted">{error}</p>
-        </div>
-      </main>
+      <>
+        <SkipLink />
+        <Header homeHref="/" />
+        <main id="top" tabIndex={-1} className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 outline-none">
+          <div className="w-full max-w-md text-center">
+            <h1 className="font-display text-3xl font-bold text-text">
+              CAN&apos;T JOIN THIS WALL
+            </h1>
+            <p className="mt-3 text-sm text-text-muted">{error}</p>
+            <Link
+              href="/"
+              className="mt-6 inline-block rounded-full border border-border px-5 py-2.5 text-sm text-text transition-colors duration-150 hover:bg-surface-hover"
+            >
+              Go to The Wall
+            </Link>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -231,11 +251,14 @@ async function handleSubmitPrivateComment(brickId: string) {
   }
 
   return (
-    <main className="min-h-screen px-4 py-10">
+    <>
+      <SkipLink />
+      <Header homeHref="/" />
+      <main className="min-h-screen px-4 py-10">
       <div className="mx-auto max-w-[760px]">
-        <header className="mb-8">
+        <header id="top" tabIndex={-1} className="mb-8 outline-none">
           <p className="font-stamp text-xs tracking-wider text-text-muted">
-            BORROW A BRICK
+            BORROWED WALL
           </p>
 
           <h1 className="mt-2 font-display text-3xl font-bold tracking-wide text-text sm:text-4xl">
@@ -405,5 +428,6 @@ async function handleSubmitPrivateComment(brickId: string) {
 
       </div>
     </main>
+    </>
   );
 }

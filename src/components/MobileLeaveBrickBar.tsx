@@ -6,7 +6,7 @@ interface MobileLeaveBrickBarProps {
 
 export default function MobileLeaveBrickBar({ onLeaveBrick }: MobileLeaveBrickBarProps) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md sm:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md transition-colors duration-200 sm:hidden">
       <button
         type="button"
         onClick={onLeaveBrick}
