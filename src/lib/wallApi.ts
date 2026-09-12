@@ -562,6 +562,28 @@ export async function fetchPublicComments(
   }));
 }
 
+/** Stable, machine-detectable SQLSTATE codes raised by create_public_comment.
+ * See supabase/migrations/004_public_comment_rate_limit.sql for the
+ * authoritative definitions — callers should branch on these, never on
+ * error.message wording. */
+export const PUBLIC_COMMENT_ERROR_CODES = {
+  rateLimited: "WA429",
+} as const;
+
+/**
+ * Creates a public comment via the create_public_comment RPC rather
+ * than a direct table insert. The RPC re-implements the same
+ * authorization invariants the old comments_insert_public_own INSERT
+ * policy enforced (auth required, 1-280 chars, target Brick active +
+ * public), and additionally enforces a 15s-per-identity server-side
+ * rate limit — see the migration for the full rationale. Direct
+ * `.from("comments").insert()` for a public comment is no longer
+ * possible: that policy was dropped in the same migration.
+ *
+ * Throws the underlying PostgrestError on failure. Callers that need
+ * to distinguish the rate-limit case should check
+ * `error.code === PUBLIC_COMMENT_ERROR_CODES.rateLimited`.
+ */
 export async function createPublicComment(
   brickId: string,
   content: string,
@@ -571,21 +593,22 @@ export async function createPublicComment(
 
   const supabase = getSupabase();
 
-  const { data, error } = await supabase
-    .from("comments")
-    .insert({
-      brick_id: brickId,
-      content: content.trim(),
-      wall_display_marker: null,
-    })
-    .select("id, content, created_at")
-    .single();
+  const { data, error } = await supabase.rpc("create_public_comment", {
+    p_brick_id: brickId,
+    p_content: content.trim(),
+  });
 
   if (error) throw error;
 
+  const row = data?.[0];
+
+  if (!row) {
+    throw new Error("Comment creation returned no data");
+  }
+
   return {
-    id: data.id,
-    content: data.content,
-    createdAt: data.created_at,
+    id: row.id,
+    content: row.content,
+    createdAt: row.created_at,
   };
 }

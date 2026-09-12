@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { PublicCommentPreview } from "@/lib/types";
 import { formatTimeAgo } from "@/lib/formatTime";
-import { createPublicComment, fetchPublicComments } from "@/lib/wallApi";
+import { createPublicComment, fetchPublicComments, PUBLIC_COMMENT_ERROR_CODES } from "@/lib/wallApi";
 
 interface PublicCommentsProps {
   brickId: string;
@@ -50,8 +50,15 @@ export default function PublicComments({
       setComments((current) => [...current, comment]);
       setText("");
       setExpanded(true);
-    } catch {
-      setError("Couldn't post comment.");
+    } catch (err) {
+      // Branch on the stable error code the RPC raises, not on
+      // message text — see PUBLIC_COMMENT_ERROR_CODES in wallApi.ts.
+      const code = (err as { code?: string } | null)?.code;
+      setError(
+        code === PUBLIC_COMMENT_ERROR_CODES.rateLimited
+          ? "Slow down — try again in a few seconds."
+          : "Couldn't post comment."
+      );
     } finally {
       setSubmitting(false);
     }
