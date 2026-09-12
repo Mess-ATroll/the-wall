@@ -158,7 +158,7 @@ begin
   select *
   into v_brick
   from public.bricks
-  where id = p_brick_id
+  where bricks.id = p_brick_id
   for update;
 
   if not found then
@@ -176,11 +176,11 @@ begin
   -- supplied timestamp. Public comments only (wall_display_marker is
   -- null) — private-wall comments are a separate pool with their own
   -- abuse boundary and are unaffected by this check.
-  select max(created_at)
+  select max(c.created_at)
   into v_last_at
-  from public.comments
-  where anonymous_id = v_user_id
-    and wall_display_marker is null;
+  from public.comments as c
+  where c.anonymous_id = v_user_id
+    and c.wall_display_marker is null;
 
   if v_last_at is not null
      and now() - v_last_at < interval '15 seconds' then
@@ -188,7 +188,7 @@ begin
       using errcode = 'WA429';
   end if;
 
-  insert into public.comments (
+  insert into public.comments as c (
     brick_id,
     anonymous_id,
     content,
@@ -203,8 +203,8 @@ begin
     null
   )
   returning
-    comments.id,
-    comments.created_at
+    c.id,
+    c.created_at
   into
     v_id,
     v_created_at;
