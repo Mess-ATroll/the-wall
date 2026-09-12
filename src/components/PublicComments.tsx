@@ -1,9 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { PublicCommentPreview } from "@/lib/types";
+import type { PublicCommentPreview, ReportReason } from "@/lib/types";
+import { REPORT_REASON_DB_VALUES } from "@/lib/types";
 import { formatTimeAgo } from "@/lib/formatTime";
-import { createPublicComment, fetchPublicComments, PUBLIC_COMMENT_ERROR_CODES } from "@/lib/wallApi";
+import { createPublicComment, createReport, fetchPublicComments, PUBLIC_COMMENT_ERROR_CODES } from "@/lib/wallApi";
+// Reused as-is from the existing Brick-reporting flow: despite the
+// "Brick" naming, this is a generic "has this id been reported by this
+// browser" store keyed purely by id string, so it works unmodified for
+// comment ids too. Not renamed here to keep this change scoped to
+// comment reporting only — WallApp.tsx's Brick-reporting call sites are
+// untouched.
+import { hasReportedBrick, markBrickReported } from "@/lib/reportStorage";
+import ReportModal from "./ReportModal";
 
 interface PublicCommentsProps {
   brickId: string;
@@ -22,6 +31,7 @@ export default function PublicComments({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [reportingCommentId, setReportingCommentId] = useState<string | null>(null);
 
   async function openComments() {
     setExpanded(true);
@@ -64,17 +74,34 @@ export default function PublicComments({
     }
   }
 
+  async function handleReportSubmit(reason: ReportReason) {
+    if (!reportingCommentId) return;
+    // targetType: "comment" — the report is filed against the comment
+    // id, never the parent Brick, so it can't be mis-attributed.
+    await createReport(reportingCommentId, REPORT_REASON_DB_VALUES[reason], "comment");
+    markBrickReported(reportingCommentId);
+  }
+
   const visibleComments = expanded ? comments : comments.slice(0, 3);
 
   return (
     <div className="mt-4 border-t border-border pt-3">
       {visibleComments.map((comment) => (
         <div key={comment.id} className="mb-3">
-          <div className="flex items-center gap-2">
-            <span className="font-stamp text-[11px] text-accent">Anonymous</span>
-            <time className="font-stamp text-[10px] text-text-faint">
-              {formatTimeAgo(comment.createdAt)}
-            </time>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-stamp text-[11px] text-accent">Anonymous</span>
+              <time className="font-stamp text-[10px] text-text-faint">
+                {formatTimeAgo(comment.createdAt)}
+              </time>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReportingCommentId(comment.id)}
+              className="text-[11px] text-text-faint transition-colors duration-150 hover:text-text"
+            >
+              Report
+            </button>
           </div>
           <p className="mt-1 text-sm leading-relaxed text-text">
             {comment.content}
@@ -140,6 +167,15 @@ export default function PublicComments({
       )}
 
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+
+      {reportingCommentId && (
+        <ReportModal
+          onClose={() => setReportingCommentId(null)}
+          onSubmit={handleReportSubmit}
+          alreadyReported={hasReportedBrick(reportingCommentId)}
+          targetLabel="Comment"
+        />
+      )}
     </div>
   );
 }
