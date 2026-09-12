@@ -7,9 +7,10 @@ interface ReportModalProps {
   onClose: () => void;
   onSubmit: (reason: ReportReason) => Promise<void>;
   alreadyReported: boolean;
+  targetLabel?: string;
 }
 
-export default function ReportModal({ onClose, onSubmit, alreadyReported }: ReportModalProps) {
+export default function ReportModal({ onClose, onSubmit, alreadyReported, targetLabel = "Brick" }: ReportModalProps) {
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +58,7 @@ export default function ReportModal({ onClose, onSubmit, alreadyReported }: Repo
       >
         {alreadyReported ? (
           <div className="flex flex-col items-center gap-4 py-4 text-center">
-            <p className="text-text">You&rsquo;ve already reported this Brick.</p>
+            <p className="text-text">You&rsquo;ve already reported this {targetLabel}.</p>
             <p className="text-sm text-text-muted">
               Our team will take a look — no need to report it again.
             </p>
@@ -84,7 +85,7 @@ export default function ReportModal({ onClose, onSubmit, alreadyReported }: Repo
           <>
             <div className="mb-4 flex items-center justify-between">
               <h2 id="report-title" className="font-display text-lg font-bold text-text">
-                REPORT BRICK
+                REPORT {targetLabel.toUpperCase()}
               </h2>
               <button
                 type="button"
@@ -99,7 +100,7 @@ export default function ReportModal({ onClose, onSubmit, alreadyReported }: Repo
             <form onSubmit={handleSubmit}>
               <fieldset>
                 <legend className="mb-3 text-sm text-text-muted">
-                  What&rsquo;s wrong with this brick?
+                  What&rsquo;s wrong with this {targetLabel.toLowerCase()}?
                 </legend>
                 <div className="flex flex-col gap-2">
                   {REPORT_REASONS.map((r) => (
