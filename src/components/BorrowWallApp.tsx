@@ -20,6 +20,8 @@ import {
 
 export default function BorrowWallApp() {
 const [inviteToken, setInviteToken] = useState<string | null>(null);
+const [requiresAccessCode, setRequiresAccessCode] = useState(false);
+const [accessCode, setAccessCode] = useState("");
 const [wall, setWall] = useState<JoinedWall | null>(null);
 const [bricks, setBricks] = useState<PrivateBrick[]>([]);
 const [comments, setComments] = useState<Record<string, PrivateComment[]>>({});
@@ -173,11 +175,17 @@ async function handleSubmitPrivateComment(brickId: string) {
 }
       } catch (err) {
         if (!cancelled) {
-          setError(
+          const message =
             err instanceof Error
               ? err.message
-              : "Couldn't join this Wall.",
-          );
+              : "Couldn't join this Wall.";
+
+          if (message.toLowerCase().includes("access code required")) {
+            setRequiresAccessCode(true);
+            setError(null);
+          } else {
+            setError(message);
+          }
         }
       } finally {
         if (!cancelled) {
@@ -192,6 +200,61 @@ async function handleSubmitPrivateComment(brickId: string) {
       cancelled = true;
     };
   }, [inviteToken]);
+
+  async function handleJoinWithAccessCode() {
+    if (!inviteToken) return;
+
+    const code = accessCode.trim().toUpperCase();
+
+    if (code.length !== 8) {
+      setError("Enter the 8-character access code.");
+      return;
+    }
+
+    try {
+      setIsJoining(true);
+      setError(null);
+
+      const result = await joinWall(inviteToken, code);
+
+      if (result) {
+        setWall(result);
+        const privateBricks = await fetchPrivateBricks(result.wallId);
+        setBricks(privateBricks);
+
+        const commentEntries = await Promise.all(
+          privateBricks.map(async (brick) => {
+            try {
+              const privateComments = await fetchPrivateComments(brick.id);
+              return [brick.id, privateComments] as const;
+            } catch (error) {
+              console.error("Failed to load private comments:", error);
+              return [brick.id, []] as const;
+            }
+          }),
+        );
+
+        setComments(Object.fromEntries(commentEntries));
+        setRequiresAccessCode(false);
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Couldn't join this Wall.";
+
+      if (message.toLowerCase().includes("invalid access code")) {
+        setError("That access code isn't correct. Check it and try again.");
+      } else if (message.toLowerCase().includes("access code required")) {
+        setError("Enter the 8-character access code.");
+      } else {
+        setRequiresAccessCode(false);
+        setError(message);
+      }
+    } finally {
+      setIsJoining(false);
+    }
+  }
 
   if (!inviteToken) {
     return (
@@ -223,7 +286,79 @@ async function handleSubmitPrivateComment(brickId: string) {
       </>
     );
   }
- if (error) {
+ if (requiresAccessCode) {
+    return (
+      <>
+        <SkipLink />
+        <Header homeHref="/" />
+        <main
+          id="top"
+          tabIndex={-1}
+          className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 outline-none"
+        >
+          <div className="w-full max-w-md text-center">
+            <h1 className="font-display text-3xl font-bold text-text">
+              ACCESS CODE REQUIRED
+            </h1>
+
+            <p className="mt-3 text-sm text-text-muted">
+              Enter the 8-character access code to join this Wall.
+            </p>
+
+            <form
+              className="mt-6"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleJoinWithAccessCode();
+              }}
+            >
+              <input
+                type="text"
+                value={accessCode}
+                onChange={(event) =>
+                  setAccessCode(
+                    event.target.value
+                      .replace(/[^a-zA-Z0-9]/g, "")
+                      .slice(0, 8)
+                      .toUpperCase(),
+                  )
+                }
+                placeholder="ACCESS CODE"
+                maxLength={8}
+                autoComplete="off"
+                autoFocus
+                className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-center font-mono text-lg tracking-[0.25em] text-text uppercase outline-none focus:border-text-muted"
+                aria-label="8-character access code"
+              />
+
+              <button
+                type="submit"
+                disabled={accessCode.length !== 8}
+                className="mt-3 w-full rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Join Wall
+              </button>
+
+              {error && (
+                <p className="mt-3 text-sm text-danger" role="alert">
+                  {error}
+                </p>
+              )}
+            </form>
+
+            <Link
+              href="/"
+              className="mt-5 inline-block text-sm text-text-muted hover:text-text"
+            >
+              Go to The Wall
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (error) {
     return (
       <>
         <SkipLink />
