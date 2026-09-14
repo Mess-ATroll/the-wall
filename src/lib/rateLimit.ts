@@ -1,5 +1,5 @@
 const STORAGE_KEY = "wall_last_post_at";
-const COOLDOWN_MS = 30_000;
+const COOLDOWN_MS = 5_000;
 
 /**
  * Returns 0 if posting is currently allowed, or the number of seconds
