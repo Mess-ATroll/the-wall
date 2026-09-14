@@ -271,17 +271,22 @@ export async function setReaction(brickId: string, nextReaction: ReactionKey): P
   setStoredReaction(brickId, nextReaction);
 }
 
-export async function createReport(targetId: string, reasonDbValue: string, targetType: "brick" | "comment" = "brick"): Promise<void> {
+export async function createReport(
+  targetId: string,
+  reasonDbValue: string,
+  targetType: "brick" | "comment" = "brick",
+): Promise<void> {
   const sessionOk = await ensureAnonymousSession();
   if (!sessionOk) throw new Error("No active session");
 
   const supabase = getSupabase();
-  // No .select() — reports has no SELECT policy at all, even for the
-  // reporter themselves, so RETURNING would fail the insert. Success
-  // is judged purely by the absence of an error.
-  const { error } = await supabase
-    .from("reports")
-    .insert(targetType === "comment" ? { comment_id: targetId, reason: reasonDbValue } : { brick_id: targetId, reason: reasonDbValue });
+
+  const { error } = await supabase.rpc("create_report", {
+    p_target_id: targetId,
+    p_target_type: targetType,
+    p_reason: reasonDbValue,
+  });
+
   if (error) throw error;
 }
 
