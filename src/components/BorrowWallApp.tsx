@@ -20,6 +20,12 @@ import {
 
 export default function BorrowWallApp() {
 const [inviteToken, setInviteToken] = useState<string | null>(null);
+function getErrorMessage(err: unknown): string {
+  if (typeof err === "object" && err !== null && "message" in err && typeof err.message === "string") return err.message;
+  if (err instanceof Error) return err.message;
+  return "Couldn't join this Wall.";
+}
+
 const [requiresAccessCode, setRequiresAccessCode] = useState(false);
 const [accessCode, setAccessCode] = useState("");
 const [wall, setWall] = useState<JoinedWall | null>(null);
@@ -175,10 +181,7 @@ async function handleSubmitPrivateComment(brickId: string) {
 }
       } catch (err) {
         if (!cancelled) {
-          const message =
-            err instanceof Error
-              ? err.message
-              : "Couldn't join this Wall.";
+          const message = getErrorMessage(err);
 
           if (message.toLowerCase().includes("access code required")) {
             setRequiresAccessCode(true);
@@ -238,10 +241,7 @@ async function handleSubmitPrivateComment(brickId: string) {
         setRequiresAccessCode(false);
       }
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Couldn't join this Wall.";
+      const message = getErrorMessage(err);
 
       if (message.toLowerCase().includes("invalid access code")) {
         setError("That access code isn't correct. Check it and try again.");
