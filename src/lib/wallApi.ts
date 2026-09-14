@@ -167,22 +167,48 @@ export async function getBrickById(brickId: string): Promise<Brick | null> {
   };
 }
 
-export async function createBrick(content: string, category: Category): Promise<Brick> {
+export async function createBrick(
+  content: string,
+  category: Category,
+  turnstileToken: string,
+): Promise<Brick> {
   const sessionOk = await ensureAnonymousSession();
   if (!sessionOk) throw new Error("No active session");
 
-  const supabase = getSupabase();
-  // Safe to .select() here: bricks_select_active permits reading rows
-  // with status = 'active', and every insert is forced to that status,
-  // so the just-inserted row always satisfies the SELECT policy needed
-  // for RETURNING to work.
-  const { data, error } = await supabase
-    .from("bricks")
-    .insert({ content, category })
-    .select("id, content, category, created_at")
-    .single();
+  const { data: sessionData } = await getSupabase().auth.getSession();
+const accessToken = sessionData.session?.access_token;
 
-  if (error) throw error;
+if (!accessToken) {
+  throw new Error("No active session");
+}
+
+const response = await fetch("/api/create-brick", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${accessToken}`,
+  },
+  body: JSON.stringify({
+    content,
+    category,
+    turnstileToken,
+  }),
+});
+
+if (!response.ok) {
+  const result = (await response.json().catch(() => null)) as {
+    error?: string;
+  } | null;
+
+  throw new Error(result?.error ?? "Couldn't create brick");
+}
+
+const data = (await response.json()) as {
+  id: string;
+  content: string;
+  category: Category;
+  created_at: string;
+};
 
   return {
     id: data.id,

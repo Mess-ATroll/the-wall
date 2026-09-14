@@ -259,7 +259,11 @@ export default function WallApp() {
     }
   }
 
-  async function handleSubmitBrick(text: string, category: Category) {
+  async function handleSubmitBrick(
+  text: string,
+  category: Category,
+  turnstileToken: string,
+) {
     const cooldown = getPostCooldownSecondsRemaining();
     if (cooldown > 0) {
       throw new Error(`Slow down — you can post again in ${cooldown}s.`);
@@ -267,7 +271,7 @@ export default function WallApp() {
 
     let newBrick: Brick;
     try {
-      newBrick = await createBrick(text, category);
+      newBrick = await createBrick(text, category, turnstileToken);
     } catch {
       throw new Error("Couldn't post your brick. Check your connection and try again.");
     }

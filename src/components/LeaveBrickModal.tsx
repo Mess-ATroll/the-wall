@@ -4,10 +4,30 @@ import { useEffect, useRef, useState } from "react";
 import { CATEGORIES, type Category } from "@/lib/types";
 
 const MAX_LENGTH = 280;
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "expired-callback"?: () => void;
+          "error-callback"?: () => void;
+        },
+      ) => string;
+      reset: (widgetId: string) => void;
+    };
+  }
+}
 
 interface LeaveBrickModalProps {
   onClose: () => void;
-  onSubmit: (text: string, category: Category) => Promise<void>;
+  onSubmit: (
+  text: string,
+  category: Category,
+  turnstileToken: string,
+) => Promise<void>;
   defaultCategory: Category;
   cooldownSeconds: number;
 }
@@ -23,6 +43,9 @@ export default function LeaveBrickModal({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
 
   useEffect(() => {
     textareaRef.current?.focus();
@@ -38,6 +61,56 @@ export default function LeaveBrickModal({
     };
   }, [onClose]);
 
+  useEffect(() => {
+    const sitekey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    if (!sitekey || !turnstileRef.current) return;
+
+    const renderWidget = () => {
+      if (
+        !window.turnstile ||
+        !turnstileRef.current ||
+        turnstileWidgetId.current
+      ) {
+        return;
+      }
+
+      turnstileWidgetId.current = window.turnstile.render(
+        turnstileRef.current,
+        {
+          sitekey,
+          callback: (token) => setTurnstileToken(token),
+          "expired-callback": () => setTurnstileToken(null),
+          "error-callback": () => setTurnstileToken(null),
+        },
+      );
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+      return;
+    }
+
+    const existingScript = document.querySelector(
+      'script[src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"]',
+    );
+
+    if (existingScript) {
+      existingScript.addEventListener("load", renderWidget);
+      return () =>
+        existingScript.removeEventListener("load", renderWidget);
+    }
+
+    const script = document.createElement("script");
+    script.src =
+      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", renderWidget);
+    document.head.appendChild(script);
+
+    return () => script.removeEventListener("load", renderWidget);
+  }, []);
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (cooldownSeconds > 0) return;
@@ -46,10 +119,20 @@ export default function LeaveBrickModal({
       setError("Your brick can't be empty.");
       return;
     }
-    setError(null);
-    setSubmitting(true);
+    if (!turnstileToken) {
+  setError("Please complete the security check.");
+  return;
+}
+
+if (!turnstileToken) {
+  setError("Please complete the security check.");
+  return;
+}
+
+setError(null);
+setSubmitting(true);
     try {
-      await onSubmit(trimmed, category);
+      await onSubmit(trimmed, category, turnstileToken);
       // success: the parent closes the modal
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Try again.");
@@ -146,6 +229,7 @@ export default function LeaveBrickModal({
             </div>
           </fieldset>
 
+          <div ref={turnstileRef} className="mt-5 flex justify-center" />
           <button
             type="submit"
             disabled={submitting || cooldownSeconds > 0}
